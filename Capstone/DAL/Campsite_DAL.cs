@@ -10,22 +10,36 @@ namespace Capstone.DAL
 {
     public class Campsite_DAL : Master_DAL
     {
-        private const string SQL_GetUnbookedCampsites = "SELECT TOP 5 site.site_id, site_number, max_occupancy, max_rv_length, utilities, campground_id, accessible FROM site INNER JOIN reservation ON reservation.site_id = site.site_id WHERE site.campground_id = 3 AND reservation.from_date > '2018-06-24' AND reservation.from_date > '2018-06-26' GROUP BY site.site_id, site.site_number, site.campground_id, site.max_occupancy, site.accessible, site.max_rv_length, site.utilities;";
+		private const string SQL_GetUnbookedCampsites = "SELECT site.site_id, site_number, max_occupancy, max_rv_length, utilities, campground_id, accessible "
+													+ "FROM site "
+													+ "WHERE site.campground_id = @campground_id "
+													+ "AND NOT EXISTS "
+														+ "(SELECT * "
+														+ "FROM reservation "
+														+ "WHERE reservation.site_id = site.site_id "
+														+ "AND NOT EXISTS "
+															+ "(SELECT * "
+															+ "FROM reservation "
+															+ "WHERE (reservation.from_date <= @from_date AND reservation.to_date >= @from_date) "
+															+ "AND (reservation.to_date  <= @to_date AND reservation.from_date >= @to_date))); ";
 
-        // GetCampsitesByPark
-        // 5 results per campground
+		// +
+		// "GROUP BY site.site_id, site.site_number, site.campground_id, site.max_occupancy, site.accessible, site.max_rv_length, site.utilities;";
 
-        // GetCampsitesByRequirement
+		// GetCampsitesByPark
+		// 5 results per campground
 
-        // ADD OFF-SEASON FILTER
-        /// <summary>
-        /// Gets a list of unbooked campsites
-        /// </summary>
-        /// <param name="campgroundID">Campground from whence to pull sites</param>
-        /// <param name="startDate">Desired day to begin reservation</param>
-        /// <param name="endDate">Desired day to end reservation</param>
-        /// <returns></returns>
-        public List<Campsite> GetCampsitesByCampground(int campgroundID, DateTime startDate, DateTime endDate)
+		// GetCampsitesByRequirement
+
+		// ADD OFF-SEASON FILTER
+		/// <summary>
+		/// Gets a list of unbooked campsites
+		/// </summary>
+		/// <param name="campgroundID">Campground from whence to pull sites</param>
+		/// <param name="startDate">Desired day to begin reservation</param>
+		/// <param name="endDate">Desired day to end reservation</param>
+		/// <returns></returns>
+		public List<Campsite> GetCampsitesByCampground(int campgroundID, DateTime? startDate, DateTime? endDate)
         {
             List<Campsite> sites = new List<Campsite>();
 

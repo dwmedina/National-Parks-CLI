@@ -53,7 +53,7 @@
     <Compile Include="Models\Park.cs" />
     <Compile Include="Models\Reservation.cs" />
     <Compile Include="Models\Campsite.cs" />
-    <Compile Include="Models\Reservation_DAL.cs" />
+    <Compile Include="DAL\Reservation_DAL.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
