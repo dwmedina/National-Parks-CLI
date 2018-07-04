@@ -50,9 +50,12 @@
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CampgroundSqlDAL_Tests.cs" />
     <Compile Include="CapstoneDBTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ParksSqlDAL_Test.cs" />
+    <Compile Include="ReservationSqlDAL_Tests.cs" />
+    <Compile Include="CampsiteSqlDAL_Test.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

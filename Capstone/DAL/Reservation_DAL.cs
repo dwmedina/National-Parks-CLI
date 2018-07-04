@@ -34,6 +34,11 @@ namespace Capstone.Models
 
 			try
 			{
+				// FOR CODE REVIEW:
+				// DO THE FOLLOWING TWO COMMANDS GET SENT AS SINGLE TRANSACTION?
+				// IF NOT, HOW TO SEND TWO COMMANDS AT SAME TIME TO BOTH
+				// CREATE NEW ROW AND
+				// GET SCALAR READ OF SINGLE ROW FOR HIGHEST RESERVATION ID?
 				using (var conn = new SqlConnection(dbConnectionString))
 				{
 					using (SqlCommand cmd = new SqlCommand(SQL_CreateReservation, conn))
@@ -48,6 +53,7 @@ namespace Capstone.Models
 
 						cmd.ExecuteNonQuery();
 
+						// Gets receipt
 						using (SqlCommand confirmation = new SqlCommand(SQL_RetrieveMostRecentReservation, conn))
 						{
 							int newestReservation = (int)confirmation.ExecuteScalar();
@@ -63,31 +69,6 @@ namespace Capstone.Models
 				throw;
 			}
 		}
-
-		//  Get the most recent reservation by ID
-		public int RetrieveMostRecentReservation()
-		{
-			int newestReservation = 0;
-
-			try
-			{
-				using (var conn = new SqlConnection(dbConnectionString))
-				{
-					SqlCommand cmd = new SqlCommand(SQL_RetrieveMostRecentReservation, conn);
-
-					newestReservation = (int)cmd.ExecuteScalar();
-				}
-			}
-			catch (Exception)
-			{
-				Console.WriteLine("Your reservation could not be retrieved.");
-			}
-
-			return newestReservation;
-		}
-
-		// THE ABOVE METHOD DOES NOT WORK--
-		// WHY?
 
 		// BONUS:  Get reservations within next 30 days
 		// Returns a list of Reservations

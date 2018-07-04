@@ -51,7 +51,7 @@ namespace Capstone
 		/// </summary>
 		private void PrintHeader()
 		{
-			Console.WriteLine("Welcome to the National Parks Reservation system!");
+			Console.WriteLine("Welcome To The National Parks Reservation System!");
 			Console.WriteLine();
 		}
 
@@ -62,14 +62,16 @@ namespace Capstone
 		{
 			Console.WriteLine("View Parks Interface");
 
-			string userChoice = "";
+			string userChoice = "0";
 
 			List<int> validOptions = new List<int>();
+
+			bool validOptionSelected = false;
 
 			// Sets parkToDisplay to 0 so choice can be reselected by user through menu regression
 			parkToDisplay = 0;
 
-			while (!validOptions.Contains(parkToDisplay))
+			while (validOptionSelected == false)
 			{
 				try
 				{
@@ -97,6 +99,7 @@ namespace Capstone
 
 						PresentParkInfo(selectedPark);
 
+						validOptionSelected = true;
 						Console.WriteLine();
 
 						return;
@@ -218,10 +221,10 @@ namespace Capstone
 			CampgroundSubMenu();
 			CampsiteCommands(GetUserInputString());
 
-            Console.WriteLine();
+			Console.WriteLine();
 
-            return;
-        }
+			return;
+		}
 
 		/// <summary>
 		/// Goes through list of campgrounds, printing relevant info to console
@@ -321,9 +324,6 @@ namespace Capstone
 			// Initializes integer to represent user selection
 			int userSelection = 1;
 
-			// Initializes integer that subs 1 from userSelection to translate selection to 0-based index
-			int campgroundSelection = userSelection - 1;
-
 			// Initializes strings to hold user-input dates,
 			// Which are used to check for "0" (if user wants to cancel)
 			string temporaryArrivalDateString;
@@ -339,6 +339,9 @@ namespace Capstone
 			// (MSDN and stackoverflow a little confusing -- what does it mean to write "innerexception"?)
 			Exception BrokenDateRange = new Exception();
 
+			// Initializes int that will be used to calculate cost of reservation
+			int numberOfDaysToReserve = 0;
+
 			// While our arrival date or departure date is null, we try to get valid input
 			// (arrival date may not be necessary to check here -- it is getting late, thoughts are fuzzy...
 			// ... was necessary at some point, but code has changed. leaving it here for now, but check during code review)
@@ -349,11 +352,14 @@ namespace Capstone
 				{
 					userSelection = GetCampgroundSelection();
 
+					// Initializes integer that subs 1 from userSelection to translate selection to 0-based index
+					int campgroundSelection = userSelection - 1;
+
 					{
 						if (userSelection == 0)
 						{
 							Cancel();
-							break;
+							return;
 						}
 					}
 
@@ -369,7 +375,7 @@ namespace Capstone
 							{
 								ClearCurrentConsoleLine();
 								Cancel();
-								break;
+								return;
 							}
 
 							arrivalDate = DateTimeTranslation(temporaryArrivalDateString);
@@ -404,15 +410,19 @@ namespace Capstone
 								ClearCurrentConsoleLine();
 								ClearCurrentConsoleLine();
 								Cancel();
-								break;
+								return;
 							}
 
 							departureDate = DateTimeTranslation(temporaryDepartureDateString);
 
+							// Sets numberOfDaysToReserve to difference between arrival and departure days + 1 so that
+							// cost is calculated per day a group is on-site
+							numberOfDaysToReserve = ((departureDate - arrivalDate).Value.Days) + 1;
+
 							// If departure date is earlier than arrival date
 							// OR date is earlier than today
 							// We curse the heavens
-							// And throw exception
+							// And throw exceptions
 							// (can easily change this so it blocks departure dates equal to today --
 							// but code written this way with presumption that guests are able to rent a site,
 							// without staying overnight)
@@ -432,7 +442,7 @@ namespace Capstone
 						}
 					}
 
-					SearchForAvailableCampsites(campgrounds[campgroundSelection], arrivalDate, departureDate);
+					SearchForAvailableCampsites(campgrounds[campgroundSelection], arrivalDate, departureDate, numberOfDaysToReserve);
 					return;
 				}
 				catch (Exception)
@@ -480,18 +490,17 @@ namespace Capstone
 						// We parse it as our desired campsite selection
 						desiredCampsite = int.Parse(temporaryDesiredCampsite);
 
-                        if (desiredCampsite == 0)
-                        {
-                            Console.WriteLine();
-                            Console.WriteLine("Returning to previous menu...");
-                            Thread.Sleep(1000);
-                            Console.Clear();
-                            GetCampgroundsByPark();
-                            GetCampgroundSelection();
+						if (desiredCampsite == 0)
+						{
+							Console.WriteLine();
+							Console.WriteLine("Returning to previous menu...");
+							Thread.Sleep(1000);
+							Console.Clear();
+							GetCampgroundsByPark();
 
-                            // This lets us close the method if user selects 0
-                            return (int)desiredCampsite;
-                        }
+							// This lets us close the method if user selects 0
+							return (int)desiredCampsite;
+						}
 
 						// We check through campsite numbers to find a hit
 						for (int i = 0; i < campsites.Count; i++)
@@ -535,6 +544,11 @@ namespace Capstone
 			Console.Write("What name should the reservation be made under? ");
 
 			string name = Console.ReadLine();
+
+			// FOR CODE REVIEW:
+			// Why does name not get updated in the parameter here if regex is not updated
+			// within the below while loop?
+			// Does it take the initial value of name, and ignore when name changes with new input?
 			var regex = Regex.IsMatch(name, @"^[a-zA-Z +]+$");
 
 			while (!regex)
@@ -542,7 +556,10 @@ namespace Capstone
 				Console.WriteLine("Invalid input.  Please enter a valid name.");
 				Thread.Sleep(1000);
 				ClearCurrentConsoleLine();
+				ClearCurrentConsoleLine();
+				Console.Write("What name should the reservation be made under? ");
 				name = Console.ReadLine();
+				regex = Regex.IsMatch(name, @"^[a-zA-Z +]+$");
 			}
 
 			return name;
@@ -552,8 +569,10 @@ namespace Capstone
 		{
 			List<int> validOptions = new List<int>();
 
+			// Valid options are dependent on how many campgrounds are available
 			for (int i = 0; i < campgrounds.Count; i++)
 			{
+				// Valid options do not operate on 0-based index, so they are bumped up by 1
 				validOptions.Add(i + 1);
 			}
 
@@ -586,10 +605,12 @@ namespace Capstone
 			return userSelection;
 		}
 
-		private void SearchForAvailableCampsites(Campground selectedCampground, DateTime? startDate, DateTime? endDate)
+		private void SearchForAvailableCampsites(Campground selectedCampground, DateTime? startDate, DateTime? endDate, int numberOfDaysToReserve)
 		{
 			// Used to get back into reservation info-getting loop if error throws us back here
 			bool trigger = false;
+
+			double totalCost = selectedCampground.DailyFee * numberOfDaysToReserve;
 
 			Campsite_DAL site_DAL = new Campsite_DAL();
 
@@ -597,7 +618,7 @@ namespace Capstone
 
 			Console.WriteLine();
 			Console.WriteLine("Results Matching Your Search Criteria");
-			Console.WriteLine("Site No.".PadRight(15) + "Max Occup.".PadRight(15) + "Accessible?".PadRight(15) + "Max RV Length".PadRight(20) + "Utility".PadRight(15) + "Cost");
+			Console.WriteLine("Site No.".PadRight(15) + "Max Occup.".PadRight(15) + "Accessible?".PadRight(15) + "Max RV Length".PadRight(20) + "Utility".PadRight(15) + "Cost of Reservation");
 
 			if (campsites.Count == 0)
 			{
@@ -613,15 +634,15 @@ namespace Capstone
 
 			foreach (var site in campsites)
 			{
-				Console.WriteLine($"{site.SiteNumber}".PadRight(15) + $"{site.MaxOccupancy}".PadRight(15) + $"{BoolChecker(site.Accessible)}".PadRight(15) + $"{RVChecker(site.MaxRVLength)}".PadRight(20) + $"{BoolChecker(site.UtilityAccess)}".PadRight(15) + $"{selectedCampground.DailyFee:c}");
+				Console.WriteLine($"{site.SiteNumber}".PadRight(15) + $"{site.MaxOccupancy}".PadRight(15) + $"{BoolChecker(site.Accessible)}".PadRight(15) + $"{RVChecker(site.MaxRVLength)}".PadRight(20) + $"{BoolChecker(site.UtilityAccess)}".PadRight(15) + $"{totalCost:c}");
 			}
 
 			while (trigger == false)
 			{
 				try
 				{
-					BookReservation(startDate, endDate);
 					trigger = true;
+					BookReservation(startDate, endDate);
 					return;
 				}
 				catch (Exception)
@@ -645,6 +666,13 @@ namespace Capstone
 		private void BookReservation(DateTime? arrivalDate, DateTime? departureDate)
 		{
 			int campsiteID = GetCampsiteID();
+
+			// If user has entered 0, exit this method
+			if (campsiteID == 0)
+			{
+				return;
+			}
+
 			string name = GetNameForReservation();
 
 			Reservation_DAL reservationDAL = new Reservation_DAL();

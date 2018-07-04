@@ -20,12 +20,8 @@ namespace Capstone.DAL
 														+ "AND NOT EXISTS "
 															+ "(SELECT * "
 															+ "FROM reservation "
-															+ "WHERE (reservation.from_date <= @from_date AND reservation.to_date >= @from_date) "
-															+ "AND (reservation.to_date  <= @to_date AND reservation.from_date >= @to_date))); ";
-
-		// +
-		// "GROUP BY site.site_id, site.site_number, site.campground_id, site.max_occupancy, site.accessible, site.max_rv_length, site.utilities;";
-
+															+ "WHERE (reservation.from_date < @from_date AND reservation.to_date > @from_date) "
+															+ "AND (reservation.to_date < @to_date AND reservation.from_date > @to_date))); ";
 		// GetCampsitesByPark
 		// 5 results per campground
 
